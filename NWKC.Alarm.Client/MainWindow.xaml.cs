@@ -31,14 +31,27 @@ namespace NWKC.Alarm.Client
 
         void AlarmCallback(int alarmId)
         {
-
+            Console.WriteLine("*** ALARM: {0}", alarmId);
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
         {
-            var alarms = _proxy.EnumerateAlarms();
+            AlarmDescription desc = new AlarmDescription();
+            desc.DayOfWeek = DateTime.Now.DayOfWeek;
+            desc.SecondsSinceMidnight = Helpers.SecondsSinceMidnight(DateTime.Now) + 4.0;
+            desc.Message = "This is a test!";
 
-            int thomas = 0;
+            int id = _proxy.CreateAlarm(desc);
+            Console.WriteLine("Created alarm: {0}", id);
+        }
+
+        private void button1_Click(object sender, RoutedEventArgs e)
+        {
+            var alarms = _proxy.EnumerateActiveAlarms();
+            foreach (var alarm in alarms)
+            {
+                _proxy.DismissActiveAlarm(alarm);
+            }
         }
     }
 }

@@ -27,7 +27,7 @@ namespace NWKC.Alarm.Service
 
         protected override void OnStart(string[] args)
         {
-            Thread.Sleep(15000);
+            //Thread.Sleep(15000);
 
             _event = new AutoResetEvent(false);
             _alarmSchedule = new AlarmSchedule();
