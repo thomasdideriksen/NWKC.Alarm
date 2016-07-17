@@ -13,6 +13,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using NWKC.Alarm.Common;
+using System.Windows.Forms;
+using System.Drawing;
+using System.Reflection;
 
 namespace NWKC.Alarm.Client
 {
@@ -21,41 +24,39 @@ namespace NWKC.Alarm.Client
     /// </summary>
     public partial class MainWindow : Window
     {
-        ServiceProxy _proxy;
+        NotifyIcon _icon;
+        ConfigurationWindow _configWindow;
 
         public MainWindow()
         {
             InitializeComponent();
-            _proxy = new ServiceProxy(AlarmCallback);
+            
+            this.WindowState = WindowState.Minimized;
+            this.Hide();
+
+            var assembly = Assembly.GetExecutingAssembly();
+            var iconStream = Helpers.GetEmbeddedResource("icon.ico", assembly);
+
+            _icon = new NotifyIcon();
+            _icon.Icon = new System.Drawing.Icon(iconStream);   //  SystemIcons.Hand; //  new System.Drawing.Icon(new FileStream(@"c:\users\thoma\desktop\icon.ico", FileMode.Open, FileAccess.Read));
+            _icon.Visible = true;
+            _icon.Click += _icon_Click;
         }
 
-        void AlarmCallback(int alarmId)
+        private void _icon_Click(object sender, EventArgs e)
         {
-            Dispatcher.BeginInvoke(new Action(() =>
+            System.Windows.Forms.MouseEventArgs args = e as System.Windows.Forms.MouseEventArgs;
+            if (args != null && _configWindow == null)
             {
-                var desc = _proxy.GetAlarmDescriptionById(alarmId);
-                Console.WriteLine("*** ALARM: {0}: {1}", alarmId, desc.Message);
-            }), null);
-        }
-
-        private void button_Click(object sender, RoutedEventArgs e)
-        {
-            AlarmDescription desc = new AlarmDescription();
-            desc.DayOfWeek = DateTime.Now.DayOfWeek;
-            desc.SecondsSinceMidnight = Helpers.SecondsSinceMidnight(DateTime.Now) + 4.0;
-            desc.Message = "This is a test!";
-
-            int id = _proxy.CreateAlarm(desc);
-            Console.WriteLine("Created alarm: {0}", id);
-        }
-
-        private void button1_Click(object sender, RoutedEventArgs e)
-        {
-            var alarms = _proxy.EnumerateActiveAlarms();
-            foreach (var alarm in alarms)
-            {
-                _proxy.DismissActiveAlarm(alarm);
+                _configWindow = new ConfigurationWindow();
+                _configWindow.Show();
+                _configWindow.Closing += _configWindow_Closing;
             }
+        }
+
+        private void _configWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            _configWindow = null;
         }
     }
 }
