@@ -8,6 +8,7 @@ using System.ServiceModel;
 using System.Reflection;
 using System.IO;
 using System.Media;
+using System.Xml.Serialization;
 
 namespace NWKC.Alarm.Service
 {
@@ -19,11 +20,13 @@ namespace NWKC.Alarm.Service
         double _lastTickTime;
         SoundPlayer _soundPlayer;
         List<IAlarmCallbacks> _clients;
+        object _loadSaveLock;
         bool _soundIsPlaying;
         static int _nextId = 1;
 
         public AlarmSchedule()
         {
+            _loadSaveLock = new object();
             _alarms = new Dictionary<int, AlarmDescription>();
             _activeAlarms = new HashSet<int>();
             _lastTickTime = Helpers.SecondsSinceMidnight(DateTime.Now);
@@ -32,6 +35,71 @@ namespace NWKC.Alarm.Service
             Stream alarmAudioStream = GetEmbeddedResource("alarm.wav");
             _soundPlayer = new SoundPlayer(alarmAudioStream);
             _soundIsPlaying = false;
+
+            LoadAlarms();
+        }
+
+        string SettingsPath
+        {
+            get
+            {
+                string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NWKCAlarm");
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                return Path.Combine(directory, "settings.xml");
+            }
+        }
+
+        void LoadAlarms()
+        {
+            lock (_loadSaveLock)
+            {
+                AlarmDescription[] alarms = null;
+
+                try
+                {
+                    var deserializer = new XmlSerializer(typeof(AlarmDescription[]));
+                    using (var stream = new FileStream(SettingsPath, FileMode.Open, FileAccess.Read))
+                    {
+                        alarms = deserializer.Deserialize(stream) as AlarmDescription[];
+                    }
+                }
+                catch (Exception ex)
+                { }
+
+                if (alarms != null)
+                {
+                    foreach (var alarm in alarms)
+                    {
+                        CreateAlarmInternal(alarm);
+                    }
+                }
+            }
+        }
+
+        void SaveAlarms()
+        {
+            lock (_loadSaveLock)
+            {
+                AlarmDescription[] alarms;
+                lock (_alarms)
+                {
+                    alarms = _alarms.Values.ToArray();
+                }
+
+                try
+                {
+                    var serializer = new XmlSerializer(typeof(AlarmDescription[]));
+                    using (var stream = new FileStream(SettingsPath, FileMode.Create, FileAccess.Write))
+                    {
+                        serializer.Serialize(stream, alarms);
+                    }
+                }
+                catch (Exception ex)
+                { }
+            }
         }
 
         public void ConnectToAlarmService()
@@ -47,6 +115,13 @@ namespace NWKC.Alarm.Service
         }
 
         public int CreateAlarm(AlarmDescription alarmDescription)
+        {
+            int id = CreateAlarmInternal(alarmDescription);
+            SaveAlarms();
+            return id;
+        }
+
+        int CreateAlarmInternal(AlarmDescription alarmDescription)
         {
             lock(_alarms)
             {
