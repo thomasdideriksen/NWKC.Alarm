@@ -21,11 +21,24 @@ namespace NWKC.Alarm.Client
     /// </summary>
     public partial class MainWindow : Window
     {
+        ServiceProxy _proxy;
+
         public MainWindow()
         {
             InitializeComponent();
+            _proxy = new ServiceProxy(AlarmCallback);
+        }
 
+        void AlarmCallback(int alarmId)
+        {
 
+        }
+
+        private void button_Click(object sender, RoutedEventArgs e)
+        {
+            var alarms = _proxy.EnumerateAlarms();
+
+            int thomas = 0;
         }
     }
 }

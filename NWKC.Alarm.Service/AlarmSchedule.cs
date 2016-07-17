@@ -4,49 +4,53 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NWKC.Alarm.Common;
+using System.ServiceModel;
 
 namespace NWKC.Alarm.Service
 {
+    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, IncludeExceptionDetailInFaults = true)]
     class AlarmSchedule : IAlarmControls
     {
         IAlarmCallbacks _callbacks;
 
-        // Note: _callbacks = OperationContext.Current.GetCallbackChannel<IAlarmCallbacks>();
-
-
         public void ConnectToAlarmService()
         {
-            throw new NotImplementedException();
+            _callbacks = OperationContext.Current.GetCallbackChannel<IAlarmCallbacks>();
         }
 
         public int CreateAlarm(AlarmDescription alarmDescription)
         {
-            throw new NotImplementedException();
+            return 0;
         }
 
         public void DeleteAlarm(int alarmId)
         {
-            throw new NotImplementedException();
+            
         }
 
         public void DismissActiveAlarm(int alarmId)
         {
-            throw new NotImplementedException();
+            
         }
 
         public int[] EnumerateActiveAlarms()
         {
-            throw new NotImplementedException();
+            return new int[] { 1, 2, 3 };
         }
 
         public int[] EnumerateAlarms()
         {
-            throw new NotImplementedException();
+            return new int[] { 1, 2, 3, 4 };
         }
 
         public AlarmDescription GetAlarmDescriptionById(int id)
         {
-            throw new NotImplementedException();
+            return null;
+        }
+
+        public void Tick()
+        {
+            // TODO
         }
     }
 }

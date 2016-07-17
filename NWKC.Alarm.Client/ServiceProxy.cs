@@ -49,40 +49,40 @@ namespace NWKC.Alarm.Client
             }
         }
         
-        int CreateAlarm(AlarmDescription alarmDescription)
+        public int CreateAlarm(AlarmDescription alarmDescription)
         {
             int ret = -1;
             SafeCall(() => { ret = _channel.CreateAlarm(alarmDescription); });
             return ret;
         }
 
-        void DeleteAlarm(int alarmId)
+        public void DeleteAlarm(int alarmId)
         {
             SafeCall(() => { _channel.DeleteAlarm(alarmId); });
         }
 
-        int[] EnumerateAlarms()
+        public int[] EnumerateAlarms()
         {
             int[] ret = new int[0];
             SafeCall(() => { ret = _channel.EnumerateAlarms(); });
             return ret;
         }
 
-        int[] EnumerateActiveAlarms()
+        public int[] EnumerateActiveAlarms()
         {
             int[] ret = new int[0];
             SafeCall(() => { ret = _channel.EnumerateActiveAlarms(); });
             return ret;
         }
 
-        AlarmDescription GetAlarmDescriptionById(int alarmId)
+        public AlarmDescription GetAlarmDescriptionById(int alarmId)
         {
             AlarmDescription ret = null;
             SafeCall(() => { ret = _channel.GetAlarmDescriptionById(alarmId); });
             return ret;
         }
 
-        void DismissActiveAlarm(int alarmId)
+        public void DismissActiveAlarm(int alarmId)
         {
             SafeCall(() => { _channel.DismissActiveAlarm(alarmId); });
         }
