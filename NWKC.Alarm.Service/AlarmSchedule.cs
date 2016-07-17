@@ -32,7 +32,8 @@ namespace NWKC.Alarm.Service
             _lastTickTime = Helpers.SecondsSinceMidnight(DateTime.Now);
             _clients = new List<IAlarmCallbacks>();
 
-            Stream alarmAudioStream = GetEmbeddedResource("alarm.wav");
+            var assembly = Assembly.GetExecutingAssembly();
+            Stream alarmAudioStream = Helpers.GetEmbeddedResource("alarm.wav", assembly);
             _soundPlayer = new SoundPlayer(alarmAudioStream);
             _soundIsPlaying = false;
 
@@ -140,20 +141,6 @@ namespace NWKC.Alarm.Service
                     _alarms.Remove(alarmId);
                 }
             }
-        }
-
-        Stream GetEmbeddedResource(string name)
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var names = assembly.GetManifestResourceNames();
-            foreach (var candidate in names)
-            {
-                if (candidate.ToLower().EndsWith(name.ToLower()))
-                {
-                    return assembly.GetManifestResourceStream(candidate);
-                }
-            }
-            return null;
         }
 
         void ActivateAlarm(int alarmId)
