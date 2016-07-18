@@ -15,7 +15,7 @@ namespace NWKC.Alarm.Common
 
     public class AlarmDescription
     {
-        public TimeSpan SnoozeDelta { get; set; }
+        public double SnoozeDeltaSeconds { get; set; }
         public AlarmType Type { get; set; }
         public DateTime Time { get; set; }
         public string Message { get; set; }
