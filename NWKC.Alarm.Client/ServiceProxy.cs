@@ -90,9 +90,9 @@ namespace NWKC.Alarm.Client
             SafeCall(() => { _channel.DismissActiveAlarm(alarmId); });
         }
 
-        public void SnoozeActiveAlarm(int alarmId)
+        public void SnoozeActiveAlarm(int alarmId, TimeSpan snoozeTime)
         {
-            SafeCall(() => { _channel.SnoozeActiveAlarm(alarmId); });
+            SafeCall(() => { _channel.SnoozeActiveAlarm(alarmId, snoozeTime); });
         }
     }
 }

@@ -28,17 +28,8 @@ namespace NWKC.Alarm.Client
             InitializeComponent();
             _proxy = new ServiceProxy(AlarmCallback);
             this.Loaded += ConfigurationWindow_Loaded;
-
-            this.AddHandler(Mouse.LostMouseCaptureEvent, new RoutedEventHandler(LostCapture));
-
         }
-
-        private void LostCapture(object sender, RoutedEventArgs e)
-        {
-            Console.WriteLine("Click");
-        }
-
-
+        
         private void ConfigurationWindow_Loaded(object sender, RoutedEventArgs e)
         {
             var display = System.Windows.SystemParameters.WorkArea;
@@ -80,6 +71,15 @@ namespace NWKC.Alarm.Client
             foreach (var alarm in alarms)
             {
                 _proxy.DismissActiveAlarm(alarm);
+            }
+        }
+
+        private void button2_Click(object sender, RoutedEventArgs e)
+        {
+            var alarms = _proxy.EnumerateActiveAlarms();
+            foreach (var alarm in alarms)
+            {
+                _proxy.SnoozeActiveAlarm(alarm, TimeSpan.FromSeconds(5.0));
             }
         }
     }

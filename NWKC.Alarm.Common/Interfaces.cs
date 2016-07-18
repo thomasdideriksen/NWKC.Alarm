@@ -15,6 +15,7 @@ namespace NWKC.Alarm.Common
 
     public class AlarmDescription
     {
+        public TimeSpan SnoozeDelta { get; set; }
         public AlarmType Type { get; set; }
         public DateTime Time { get; set; }
         public string Message { get; set; }
@@ -45,7 +46,7 @@ namespace NWKC.Alarm.Common
         void DismissActiveAlarm(int alarmId);
 
         [OperationContract]
-        void SnoozeActiveAlarm(int alarmId);
+        void SnoozeActiveAlarm(int alarmId, TimeSpan snoozeTime);
     }
 
     public interface IAlarmCallbacks

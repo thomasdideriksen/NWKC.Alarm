@@ -127,7 +127,7 @@ namespace NWKC.Alarm.Service
 
         int CreateAlarmInternal(AlarmDescription alarmDescription)
         {
-            lock(_alarms)
+            lock (_alarms)
             {
                 int id = _nextId++;
                 _alarms.Add(id, alarmDescription);
@@ -182,9 +182,24 @@ namespace NWKC.Alarm.Service
             }
         }
 
-        public void SnoozeActiveAlarm(int alarmId)
+        public void SnoozeActiveAlarm(int alarmId, TimeSpan snoozeTime)
         {
-            // TODO
+            lock (_activeAlarms)
+            {
+                if (_activeAlarms.Contains(alarmId))
+                {
+                    _activeAlarms.Remove(alarmId);
+
+                    lock (_alarms)
+                    {
+                        var alarm = _alarms[alarmId];
+                        var toNow = DateTime.Now.Subtract(alarm.Time);
+                        alarm.SnoozeDelta = toNow.Add(snoozeTime);
+                    }
+                }
+
+                StopSoundIfNoActiveAlarms();
+            }
         }
 
         public void DismissActiveAlarm(int alarmId)
@@ -198,11 +213,16 @@ namespace NWKC.Alarm.Service
 
                 // TODO: Maybe clean up OneTime alarms here to avoid unbounded growth of settings.xml
 
-                if (_activeAlarms.Count == 0 && _soundIsPlaying)
-                {
-                    _soundPlayer.Stop();
-                    _soundIsPlaying = false;
-                }
+                StopSoundIfNoActiveAlarms();
+            }
+        }
+
+        void StopSoundIfNoActiveAlarms()
+        {
+            if (_activeAlarms.Count == 0 && _soundIsPlaying)
+            {
+                _soundPlayer.Stop();
+                _soundIsPlaying = false;
             }
         }
 
@@ -247,7 +267,7 @@ namespace NWKC.Alarm.Service
                 foreach (var key in _alarms.Keys)
                 {
                     var desc = _alarms[key];
-                    var alarmTime = desc.Time;
+                    var alarmTime = desc.Time.Add(desc.SnoozeDelta);
 
                     //
                     // Alarm should fire when:
