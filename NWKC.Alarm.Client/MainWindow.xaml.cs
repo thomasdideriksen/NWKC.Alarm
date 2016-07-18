@@ -38,7 +38,7 @@ namespace NWKC.Alarm.Client
             var iconStream = Helpers.GetEmbeddedResource("icon.ico", assembly);
 
             _icon = new NotifyIcon();
-            _icon.Icon = new System.Drawing.Icon(iconStream);   //  SystemIcons.Hand; //  new System.Drawing.Icon(new FileStream(@"c:\users\thoma\desktop\icon.ico", FileMode.Open, FileAccess.Read));
+            _icon.Icon = new System.Drawing.Icon(iconStream);
             _icon.Visible = true;
             _icon.Click += _icon_Click;
         }

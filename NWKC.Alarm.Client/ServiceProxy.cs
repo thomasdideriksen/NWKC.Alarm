@@ -9,7 +9,10 @@ using NWKC.Alarm.Common;
 namespace NWKC.Alarm.Client
 {
     public delegate void AlarmCalback(int alarmId);
-
+    
+    [CallbackBehavior(
+        ConcurrencyMode = ConcurrencyMode.Multiple, 
+        IncludeExceptionDetailInFaults = true)]
     class ServiceProxy : IAlarmCallbacks
     {
         IAlarmControls _channel;
@@ -45,7 +48,7 @@ namespace NWKC.Alarm.Client
             }
             catch (Exception ex)
             {
-
+                Console.WriteLine(ex.Message);
             }
         }
         

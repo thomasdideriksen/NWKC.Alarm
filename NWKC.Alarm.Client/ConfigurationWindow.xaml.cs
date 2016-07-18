@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using NWKC.Alarm.Common;
+using System.Windows.Threading;
 
 namespace NWKC.Alarm.Client
 {
@@ -30,11 +31,9 @@ namespace NWKC.Alarm.Client
 
         void AlarmCallback(int alarmId)
         {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                var desc = _proxy.GetAlarmDescriptionById(alarmId);
-                Console.WriteLine("*** ALARM: {0}: {1}", alarmId, desc.Message);
-            }), null);
+            Console.Write("--> {0}", alarmId);
+            var desc = _proxy.GetAlarmDescriptionById(alarmId);
+            Console.WriteLine(desc.Message);
         }
 
         private void button_Click(object sender, RoutedEventArgs e)

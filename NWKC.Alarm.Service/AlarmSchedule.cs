@@ -12,7 +12,10 @@ using System.Xml.Serialization;
 
 namespace NWKC.Alarm.Service
 {
-    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, IncludeExceptionDetailInFaults = true)]
+    [ServiceBehavior(
+        InstanceContextMode = InstanceContextMode.Single, 
+        IncludeExceptionDetailInFaults = true, 
+        ConcurrencyMode = ConcurrencyMode.Multiple)]
     class AlarmSchedule : IAlarmControls
     {
         Dictionary<int, AlarmDescription> _alarms;
