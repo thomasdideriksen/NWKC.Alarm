@@ -23,13 +23,13 @@ namespace NWKC.Alarm.Service
         DateTime _lastTickTime;
         SoundPlayer _soundPlayer;
         List<IAlarmCallbacks> _clients;
-        object _loadSaveLock;
+        object _lockObject;
         bool _soundIsPlaying;
         static int _nextId = 1;
 
         public AlarmSchedule()
         {
-            _loadSaveLock = new object();
+            _lockObject = new object();
             _alarms = new Dictionary<int, AlarmDescription>();
             _activeAlarms = new HashSet<int>();
             _lastTickTime = DateTime.Now;
@@ -58,162 +58,78 @@ namespace NWKC.Alarm.Service
 
         void LoadAlarms()
         {
-            lock (_loadSaveLock)
+            AlarmDescription[] alarms = null;
+
+            try
             {
-                AlarmDescription[] alarms = null;
-
-                try
+                var deserializer = new XmlSerializer(typeof(AlarmDescription[]));
+                using (var stream = new FileStream(SettingsPath, FileMode.Open, FileAccess.Read))
                 {
-                    var deserializer = new XmlSerializer(typeof(AlarmDescription[]));
-                    using (var stream = new FileStream(SettingsPath, FileMode.Open, FileAccess.Read))
-                    {
-                        alarms = deserializer.Deserialize(stream) as AlarmDescription[];
-                    }
+                    alarms = deserializer.Deserialize(stream) as AlarmDescription[];
                 }
-                catch (Exception ex)
-                { }
+            }
+            catch (Exception ex)
+            { }
 
-                if (alarms != null)
+            if (alarms != null)
+            {
+                foreach (var alarm in alarms)
                 {
-                    foreach (var alarm in alarms)
-                    {
-                        CreateAlarmInternal(alarm);
-                    }
+                    CreateAlarmInternal(alarm);
                 }
             }
         }
 
         void SaveAlarms()
         {
-            lock (_loadSaveLock)
+            AlarmDescription[] alarms = _alarms.Values.ToArray();
+            
+            try
             {
-                AlarmDescription[] alarms;
-                lock (_alarms)
+                var serializer = new XmlSerializer(typeof(AlarmDescription[]));
+                using (var stream = new FileStream(SettingsPath, FileMode.Create, FileAccess.Write))
                 {
-                    alarms = _alarms.Values.ToArray();
-                }
-
-                try
-                {
-                    var serializer = new XmlSerializer(typeof(AlarmDescription[]));
-                    using (var stream = new FileStream(SettingsPath, FileMode.Create, FileAccess.Write))
-                    {
-                        serializer.Serialize(stream, alarms);
-                    }
-                }
-                catch (Exception ex)
-                { }
-            }
-        }
-
-        public void ConnectToAlarmService()
-        {
-            var client = OperationContext.Current.GetCallbackChannel<IAlarmCallbacks>();
-            lock (_clients)
-            {
-                if (client != null && !_clients.Contains(client))
-                {
-                    _clients.Add(client);
+                    serializer.Serialize(stream, alarms);
                 }
             }
-        }
-
-        public int CreateAlarm(AlarmDescription alarmDescription)
-        {
-            int id = CreateAlarmInternal(alarmDescription);
-            SaveAlarms();
-            return id;
+            catch (Exception ex)
+            { }
         }
 
         int CreateAlarmInternal(AlarmDescription alarmDescription)
         {
-            lock (_alarms)
-            {
-                int id = _nextId++;
-                _alarms.Add(id, alarmDescription);
-                return id;
-            }
-        }
-
-        public void DeleteAlarm(int alarmId)
-        {
-            lock (_alarms)
-            {
-                if (_alarms.ContainsKey(alarmId))
-                {
-                    _alarms.Remove(alarmId);
-                }
-            }
+            int id = _nextId++;
+            _alarms.Add(id, alarmDescription);
+            return id;
         }
 
         void ActivateAlarm(int alarmId)
         {
-            lock (_activeAlarms)
-            {
-                _activeAlarms.Add(alarmId);
+            _activeAlarms.Add(alarmId);
 
-                if (!_soundIsPlaying)
+            if (!_soundIsPlaying)
+            {
+                _soundPlayer.PlayLooping();
+                _soundIsPlaying = true;
+            }
+            
+            List<IAlarmCallbacks> invalidClients = new List<IAlarmCallbacks>();
+
+            foreach (var client in _clients)
+            {
+                try
                 {
-                    _soundPlayer.PlayLooping();
-                    _soundIsPlaying = true;
+                    client.AlarmBecameActive(alarmId);
+                }
+                catch (Exception ex)
+                {
+                    invalidClients.Add(client);
                 }
             }
 
-            lock (_clients)
+            foreach (var invalidClient in invalidClients)
             {
-                List<IAlarmCallbacks> invalidClients = new List<IAlarmCallbacks>();
-
-                foreach (var client in _clients)
-                {
-                    try
-                    {
-                        client.AlarmBecameActive(alarmId);
-                    }
-                    catch (Exception ex)
-                    {
-                        invalidClients.Add(client);
-                    }
-                }
-
-                foreach (var invalidClient in invalidClients)
-                {
-                    _clients.Remove(invalidClient);
-                }
-            }
-        }
-
-        public void SnoozeActiveAlarm(int alarmId, TimeSpan snoozeTime)
-        {
-            lock (_activeAlarms)
-            {
-                if (_activeAlarms.Contains(alarmId))
-                {
-                    _activeAlarms.Remove(alarmId);
-
-                    lock (_alarms)
-                    {
-                        var alarm = _alarms[alarmId];
-                        var toNow = DateTime.Now.Subtract(alarm.Time);
-                        alarm.SnoozeDelta = toNow.Add(snoozeTime);
-                    }
-                }
-
-                StopSoundIfNoActiveAlarms();
-            }
-        }
-
-        public void DismissActiveAlarm(int alarmId)
-        {
-            lock (_activeAlarms)
-            {
-                if (_activeAlarms.Contains(alarmId))
-                {
-                    _activeAlarms.Remove(alarmId);
-                }
-
-                // TODO: Maybe clean up OneTime alarms here to avoid unbounded growth of settings.xml
-
-                StopSoundIfNoActiveAlarms();
+                _clients.Remove(invalidClient);
             }
         }
 
@@ -226,9 +142,80 @@ namespace NWKC.Alarm.Service
             }
         }
 
+
+
+
+
+
+
+        public void ConnectToAlarmService()
+        {
+            lock (_lockObject)
+            {
+                var client = OperationContext.Current.GetCallbackChannel<IAlarmCallbacks>();
+                if (client != null && !_clients.Contains(client))
+                {
+                    _clients.Add(client);
+                }
+            }
+        }
+
+        public int CreateAlarm(AlarmDescription alarmDescription)
+        {
+            lock (_lockObject)
+            {
+                int id = CreateAlarmInternal(alarmDescription);
+                SaveAlarms();
+                return id;
+            }
+        }
+
+        public void DeleteAlarm(int alarmId)
+        {
+            lock (_lockObject)
+            {
+                if (_alarms.ContainsKey(alarmId))
+                {
+                    _alarms.Remove(alarmId);
+                }
+            }
+        }
+        
+        public void SnoozeActiveAlarm(int alarmId, TimeSpan snoozeTime)
+        {
+            lock (_lockObject)
+            {
+                if (_activeAlarms.Contains(alarmId))
+                {
+                    _activeAlarms.Remove(alarmId);
+
+                    var alarm = _alarms[alarmId];
+                    var toNow = DateTime.Now.Subtract(alarm.Time);
+                    alarm.SnoozeDelta = toNow.Add(snoozeTime);
+                }
+
+                StopSoundIfNoActiveAlarms();
+            }
+        }
+
+        public void DismissActiveAlarm(int alarmId)
+        {
+            lock (_lockObject)
+            {
+                if (_activeAlarms.Contains(alarmId))
+                {
+                    _activeAlarms.Remove(alarmId);
+                }
+
+                // TODO: Maybe clean up OneTime alarms here to avoid unbounded growth of settings.xml
+
+                StopSoundIfNoActiveAlarms();
+            }
+        }
+        
         public int[] EnumerateActiveAlarms()
         {
-            lock (_activeAlarms)
+            lock (_lockObject)
             {
                 return _activeAlarms.ToArray();
             }
@@ -236,7 +223,7 @@ namespace NWKC.Alarm.Service
 
         public int[] EnumerateAlarms()
         {
-            lock (_alarms)
+            lock (_lockObject)
             {
                 return _alarms.Keys.ToArray();
             }
@@ -244,7 +231,7 @@ namespace NWKC.Alarm.Service
 
         public AlarmDescription GetAlarmDescription(int id)
         {
-            lock (_alarms)
+            lock (_lockObject)
             {
                 if (_alarms.ContainsKey(id))
                 {
@@ -259,11 +246,12 @@ namespace NWKC.Alarm.Service
 
         public void Tick()
         {
-            var tickTime = DateTime.Now;
-            List<int> alarmsToActivate = new List<int>();
-
-            lock (_alarms)
+            lock (_lockObject)
             {
+                var tickTime = DateTime.Now;
+                List<int> alarmsToActivate = new List<int>();
+
+
                 foreach (var key in _alarms.Keys)
                 {
                     var desc = _alarms[key];
@@ -289,7 +277,7 @@ namespace NWKC.Alarm.Service
 
                         case AlarmType.RecurringWeekly:
                             const double secondsPerWeek = 7 * 24 * 60 * 60;
-                                
+
                             double alarmSeconds = alarmTime.ToUnixTimeInSeconds() % secondsPerWeek;
                             double tickSeconds = tickTime.ToUnixTimeInSeconds() % secondsPerWeek;
                             double lastTickSeconds = _lastTickTime.ToUnixTimeInSeconds() % secondsPerWeek;
@@ -304,11 +292,11 @@ namespace NWKC.Alarm.Service
                 }
 
                 _lastTickTime = tickTime;
-            }
 
-            foreach (var alarmId in alarmsToActivate)
-            {
-                ActivateAlarm(alarmId);
+                foreach (var alarmId in alarmsToActivate)
+                {
+                    ActivateAlarm(alarmId);
+                }
             }
         }
     }

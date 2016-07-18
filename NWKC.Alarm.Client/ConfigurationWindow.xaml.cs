@@ -46,9 +46,12 @@ namespace NWKC.Alarm.Client
 
         void AlarmCallback(int alarmId)
         {
-            Console.Write("--> {0}", alarmId);
-            var desc = _proxy.GetAlarmDescription(alarmId);
-            Console.WriteLine(desc.Message);
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Console.Write("--> {0}", alarmId);
+                var desc = _proxy.GetAlarmDescription(alarmId);
+                Console.WriteLine(desc.Message);
+            }));
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
