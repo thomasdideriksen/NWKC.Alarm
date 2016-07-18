@@ -8,17 +8,15 @@ using System.Reflection;
 
 namespace NWKC.Alarm.Common
 {
-    public class Helpers
+    public static class Helpers
     {
-        public static double SecondsSinceMidnight(DateTime t)
+        public static double ToUnixTimeInSeconds(this DateTime t)
         {
-            return
-                t.Hour * 60 * 60 +
-                t.Minute * 60 +
-                t.Second +
-                t.Millisecond / 1000.0;
+            var unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0);
+            var elapsed = t.Subtract(unixEpoch);
+            return elapsed.TotalSeconds;
         }
-        
+
         public static Stream GetEmbeddedResource(string name, Assembly assembly)
         {
             var names = assembly.GetManifestResourceNames();

@@ -78,16 +78,21 @@ namespace NWKC.Alarm.Client
             return ret;
         }
 
-        public AlarmDescription GetAlarmDescriptionById(int alarmId)
+        public AlarmDescription GetAlarmDescription(int alarmId)
         {
             AlarmDescription ret = null;
-            SafeCall(() => { ret = _channel.GetAlarmDescriptionById(alarmId); });
+            SafeCall(() => { ret = _channel.GetAlarmDescription(alarmId); });
             return ret;
         }
 
         public void DismissActiveAlarm(int alarmId)
         {
             SafeCall(() => { _channel.DismissActiveAlarm(alarmId); });
+        }
+
+        public void SnoozeActiveAlarm(int alarmId)
+        {
+            SafeCall(() => { _channel.SnoozeActiveAlarm(alarmId); });
         }
     }
 }

@@ -7,10 +7,16 @@ using System.ServiceModel;
 
 namespace NWKC.Alarm.Common
 {
+    public enum AlarmType
+    {
+        OneTime,
+        RecurringWeekly,
+    }
+
     public class AlarmDescription
     {
-        public DayOfWeek DayOfWeek { get; set; }
-        public double SecondsSinceMidnight { get; set; }
+        public AlarmType Type { get; set; }
+        public DateTime Time { get; set; }
         public string Message { get; set; }
     }
 
@@ -33,10 +39,13 @@ namespace NWKC.Alarm.Common
         int[] EnumerateActiveAlarms();
 
         [OperationContract]
-        AlarmDescription GetAlarmDescriptionById(int id);
+        AlarmDescription GetAlarmDescription(int id);
 
         [OperationContract]
         void DismissActiveAlarm(int alarmId);
+
+        [OperationContract]
+        void SnoozeActiveAlarm(int alarmId);
     }
 
     public interface IAlarmCallbacks

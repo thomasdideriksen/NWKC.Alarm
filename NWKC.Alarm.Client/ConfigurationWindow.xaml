@@ -5,48 +5,82 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:NWKC.Alarm.Client"
         mc:Ignorable="d"
-        Title="ConfigurationWindow" Height="300" Width="300">
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="Manual"
+        WindowStyle="None"
+        x:Name="window"
+        Title="ConfigurationWindow" Height="300" Width="400">
 
-        <StackPanel Orientation="Horizontal" Grid.Row="0">
-            <Button x:Name="button" Content="Schedule Alarm"  VerticalAlignment="Top" Width="129" Click="button_Click"/>
-            <Button x:Name="button1" Content="Dismiss"  VerticalAlignment="Top" Width="75" Click="button1_Click"/>
-        </StackPanel>
 
-        <Grid Grid.Row="1" Margin="0 16 0 0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <Grid.Resources>
-                <Style x:Key="DayOfWeekText" TargetType="TextBlock">
-                    <Setter Property="FontFamily" Value="Segoe UI Light"/>
-                    <Setter Property="FontSize" Value="16"/>
-                    <Setter Property="Foreground" Value="#a0a0a0"/>
-                    <Setter Property="TextAlignment" Value="Center"/>
-                </Style>
-            </Grid.Resources>
-            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource DayOfWeekText}">Sun</TextBlock>
-            <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource DayOfWeekText}">Mon</TextBlock>
-            <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource DayOfWeekText}">Tue</TextBlock>
-            <TextBlock Grid.Row="0" Grid.Column="3" Style="{StaticResource DayOfWeekText}">Wed</TextBlock>
-            <TextBlock Grid.Row="0" Grid.Column="4" Style="{StaticResource DayOfWeekText}">Thu</TextBlock>
-            <TextBlock Grid.Row="0" Grid.Column="5" Style="{StaticResource DayOfWeekText}">Fri</TextBlock>
-            <TextBlock Grid.Row="0" Grid.Column="6" Style="{StaticResource DayOfWeekText}">Sat</TextBlock>
-        </Grid>
+    <Grid Margin="32">
+        <Border CornerRadius="4" Background="White" Padding="16" BorderBrush="#a0a0a0" BorderThickness="1">
 
+            <Border.Resources>
+                <QuadraticEase EasingMode="EaseOut" x:Key="Easing"/>
+            </Border.Resources>
+
+            <Border.Triggers>
+                <EventTrigger RoutedEvent="Window.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Duration="00:00:0.5" EasingFunction="{StaticResource Easing}" Storyboard.TargetProperty="Opacity" From="0" To="1"/>
+                            <DoubleAnimation  Duration="00:00:0.5" EasingFunction="{StaticResource Easing}" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="32" To="0"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Border.Triggers>
+            
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="0" BlurRadius="32" Color="Black"/>
+            </Border.Effect>
+
+            <Border.RenderTransform>
+                <TranslateTransform/>
+            </Border.RenderTransform>
+            
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Orientation="Horizontal" Grid.Row="0">
+                    <Button x:Name="button" Content="Schedule Alarm"  VerticalAlignment="Top" Width="129" Click="button_Click"/>
+                    <Button x:Name="button1" Content="Dismiss"  VerticalAlignment="Top" Width="75" Click="button1_Click"/>
+                </StackPanel>
+
+                <Grid Grid.Row="1" Margin="0 16 0 0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.Resources>
+                        <Style x:Key="DayOfWeekText" TargetType="TextBlock">
+                            <Setter Property="FontFamily" Value="Segoe UI Light"/>
+                            <Setter Property="FontSize" Value="16"/>
+                            <Setter Property="Foreground" Value="#a0a0a0"/>
+                            <Setter Property="TextAlignment" Value="Center"/>
+                        </Style>
+                    </Grid.Resources>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource DayOfWeekText}">Sun</TextBlock>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource DayOfWeekText}">Mon</TextBlock>
+                    <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource DayOfWeekText}">Tue</TextBlock>
+                    <TextBlock Grid.Row="0" Grid.Column="3" Style="{StaticResource DayOfWeekText}">Wed</TextBlock>
+                    <TextBlock Grid.Row="0" Grid.Column="4" Style="{StaticResource DayOfWeekText}">Thu</TextBlock>
+                    <TextBlock Grid.Row="0" Grid.Column="5" Style="{StaticResource DayOfWeekText}">Fri</TextBlock>
+                    <TextBlock Grid.Row="0" Grid.Column="6" Style="{StaticResource DayOfWeekText}">Sat</TextBlock>
+                </Grid>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

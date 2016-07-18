@@ -46,17 +46,21 @@ namespace NWKC.Alarm.Client
         private void _icon_Click(object sender, EventArgs e)
         {
             System.Windows.Forms.MouseEventArgs args = e as System.Windows.Forms.MouseEventArgs;
-            if (args != null && _configWindow == null)
+            if (args != null)
             {
-                _configWindow = new ConfigurationWindow();
+                if (_configWindow == null)
+                {
+                    _configWindow = new ConfigurationWindow();
+                    _configWindow.Closing += _configWindow_Closing;
+                }
                 _configWindow.Show();
-                _configWindow.Closing += _configWindow_Closing;
             }
         }
 
         private void _configWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            _configWindow = null;
+            _configWindow.Hide();
+            e.Cancel = true;
         }
     }
 }

@@ -20,7 +20,7 @@ namespace NWKC.Alarm.Service
     {
         Dictionary<int, AlarmDescription> _alarms;
         HashSet<int> _activeAlarms;
-        double _lastTickTime;
+        DateTime _lastTickTime;
         SoundPlayer _soundPlayer;
         List<IAlarmCallbacks> _clients;
         object _loadSaveLock;
@@ -32,7 +32,7 @@ namespace NWKC.Alarm.Service
             _loadSaveLock = new object();
             _alarms = new Dictionary<int, AlarmDescription>();
             _activeAlarms = new HashSet<int>();
-            _lastTickTime = Helpers.SecondsSinceMidnight(DateTime.Now);
+            _lastTickTime = DateTime.Now;
             _clients = new List<IAlarmCallbacks>();
 
             var assembly = Assembly.GetExecutingAssembly();
@@ -182,6 +182,11 @@ namespace NWKC.Alarm.Service
             }
         }
 
+        public void SnoozeActiveAlarm(int alarmId)
+        {
+            // TODO
+        }
+
         public void DismissActiveAlarm(int alarmId)
         {
             lock (_activeAlarms)
@@ -190,6 +195,8 @@ namespace NWKC.Alarm.Service
                 {
                     _activeAlarms.Remove(alarmId);
                 }
+
+                // TODO: Maybe clean up OneTime alarms here to avoid unbounded growth of settings.xml
 
                 if (_activeAlarms.Count == 0 && _soundIsPlaying)
                 {
@@ -215,7 +222,7 @@ namespace NWKC.Alarm.Service
             }
         }
 
-        public AlarmDescription GetAlarmDescriptionById(int id)
+        public AlarmDescription GetAlarmDescription(int id)
         {
             lock (_alarms)
             {
@@ -232,8 +239,7 @@ namespace NWKC.Alarm.Service
 
         public void Tick()
         {
-            var now = DateTime.Now;
-            double tickTime = Helpers.SecondsSinceMidnight(now);
+            var tickTime = DateTime.Now;
             List<int> alarmsToActivate = new List<int>();
 
             lock (_alarms)
@@ -241,14 +247,42 @@ namespace NWKC.Alarm.Service
                 foreach (var key in _alarms.Keys)
                 {
                     var desc = _alarms[key];
+                    var alarmTime = desc.Time;
 
-                    if (now.DayOfWeek == desc.DayOfWeek)
+                    //
+                    // Alarm should fire when:
+                    //     
+                    // ----------|----------|----------|----------> time
+                    //           ^          ^          ^
+                    //       last-tick    alarm      tick
+                    //
+
+                    switch (desc.Type)
                     {
-                        if (desc.SecondsSinceMidnight <= tickTime && // Alarm time met or exceeded
-                            desc.SecondsSinceMidnight > _lastTickTime) // We haven't already fired the alarm for this item
-                        {
-                            alarmsToActivate.Add(key);
-                        }
+                        case AlarmType.OneTime:
+                            if (alarmTime > _lastTickTime &&
+                                alarmTime <= tickTime)
+                            {
+                                alarmsToActivate.Add(key);
+                            }
+                            break;
+
+                        case AlarmType.RecurringWeekly:
+                            if (tickTime.DayOfWeek == desc.Time.DayOfWeek)
+                            {
+                                const double secondsPerWeek = 7 * 24 * 60 * 60;
+                                
+                                double alarmSeconds = alarmTime.ToUnixTimeInSeconds() % secondsPerWeek;
+                                double tickSeconds = tickTime.ToUnixTimeInSeconds() % secondsPerWeek;
+                                double lastTickSeconds = _lastTickTime.ToUnixTimeInSeconds() % secondsPerWeek;
+
+                                if (alarmSeconds > lastTickSeconds &&
+                                    alarmSeconds <= tickSeconds)
+                                {
+                                    alarmsToActivate.Add(key);
+                                }
+                            }
+                            break;
                     }
                 }
 

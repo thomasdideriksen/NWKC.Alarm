@@ -27,20 +27,47 @@ namespace NWKC.Alarm.Client
         {
             InitializeComponent();
             _proxy = new ServiceProxy(AlarmCallback);
+            this.Loaded += ConfigurationWindow_Loaded;
+
+            this.AddHandler(Mouse.LostMouseCaptureEvent, new RoutedEventHandler(LostCapture));
+
+        }
+
+        private void LostCapture(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("Click");
+        }
+
+
+        private void ConfigurationWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            var display = System.Windows.SystemParameters.WorkArea;
+            this.Left = display.Right - this.Width;
+            this.Top = display.Bottom - this.Height;
+            this.Topmost = true;
+        }
+
+        protected override void OnDeactivated(EventArgs e)
+        {
+            base.OnDeactivated(e);
+            Close();
         }
 
         void AlarmCallback(int alarmId)
         {
             Console.Write("--> {0}", alarmId);
-            var desc = _proxy.GetAlarmDescriptionById(alarmId);
+            var desc = _proxy.GetAlarmDescription(alarmId);
             Console.WriteLine(desc.Message);
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
         {
+            DateTime time = DateTime.Now;
+            time = time.Add(TimeSpan.FromSeconds(4));
+
             AlarmDescription desc = new AlarmDescription();
-            desc.DayOfWeek = DateTime.Now.DayOfWeek;
-            desc.SecondsSinceMidnight = Helpers.SecondsSinceMidnight(DateTime.Now) + 4.0;
+            desc.Type = AlarmType.RecurringWeekly;
+            desc.Time = time;
             desc.Message = "This is a test!";
 
             int id = _proxy.CreateAlarm(desc);
