@@ -268,19 +268,16 @@ namespace NWKC.Alarm.Service
                             break;
 
                         case AlarmType.RecurringWeekly:
-                            if (tickTime.DayOfWeek == desc.Time.DayOfWeek)
-                            {
-                                const double secondsPerWeek = 7 * 24 * 60 * 60;
+                            const double secondsPerWeek = 7 * 24 * 60 * 60;
                                 
-                                double alarmSeconds = alarmTime.ToUnixTimeInSeconds() % secondsPerWeek;
-                                double tickSeconds = tickTime.ToUnixTimeInSeconds() % secondsPerWeek;
-                                double lastTickSeconds = _lastTickTime.ToUnixTimeInSeconds() % secondsPerWeek;
+                            double alarmSeconds = alarmTime.ToUnixTimeInSeconds() % secondsPerWeek;
+                            double tickSeconds = tickTime.ToUnixTimeInSeconds() % secondsPerWeek;
+                            double lastTickSeconds = _lastTickTime.ToUnixTimeInSeconds() % secondsPerWeek;
 
-                                if (alarmSeconds > lastTickSeconds &&
-                                    alarmSeconds <= tickSeconds)
-                                {
-                                    alarmsToActivate.Add(key);
-                                }
+                            if (alarmSeconds > lastTickSeconds &&
+                                alarmSeconds <= tickSeconds)
+                            {
+                                alarmsToActivate.Add(key);
                             }
                             break;
                     }
