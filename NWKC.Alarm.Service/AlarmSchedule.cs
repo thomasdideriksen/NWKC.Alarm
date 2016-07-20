@@ -124,14 +124,19 @@ namespace NWKC.Alarm.Service
                 _soundPlayer.PlayLooping();
                 _soundIsPlaying = true;
             }
-            
+
+            OnActiveAlarmsChanged();
+        }
+
+        void OnActiveAlarmsChanged()
+        {
             List<IAlarmCallbacks> invalidClients = new List<IAlarmCallbacks>();
 
             foreach (var client in _clients)
             {
                 try
                 {
-                    client.AlarmBecameActive(alarmId);
+                    client.ActiveAlarmsChanged();
                 }
                 catch (Exception ex)
                 {
@@ -192,7 +197,7 @@ namespace NWKC.Alarm.Service
         }
         
         public void SnoozeActiveAlarm(int alarmId, TimeSpan snoozeTime)
-        {
+        {        
             lock (_lockApi)
             {
                 if (_activeAlarms.Contains(alarmId))
@@ -203,9 +208,11 @@ namespace NWKC.Alarm.Service
                     var toNow = DateTime.Now.Subtract(alarm.Time);
                     alarm.SnoozeDeltaSeconds = toNow.Add(snoozeTime).TotalSeconds;
 
+                    OnActiveAlarmsChanged();
+
                     SaveAlarms();
                 }
-
+                
                 StopSoundIfNoActiveAlarms();
             }
         }
@@ -217,6 +224,8 @@ namespace NWKC.Alarm.Service
                 if (_activeAlarms.Contains(alarmId))
                 {
                     _activeAlarms.Remove(alarmId);
+
+                    OnActiveAlarmsChanged();
                 }
 
                 // TODO: Maybe clean up OneTime alarms here to avoid unbounded growth of settings.xml

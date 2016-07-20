@@ -8,7 +8,7 @@ using NWKC.Alarm.Common;
 
 namespace NWKC.Alarm.Client
 {
-    public delegate void AlarmCalback(int alarmId);
+    public delegate void ActiveAlarmsChangedCallback();
     
     [CallbackBehavior(
         ConcurrencyMode = ConcurrencyMode.Multiple, 
@@ -16,9 +16,9 @@ namespace NWKC.Alarm.Client
     class ServiceProxy : IAlarmCallbacks
     {
         IAlarmControls _channel;
-        AlarmCalback _callback;
+        ActiveAlarmsChangedCallback _callback;
 
-        public ServiceProxy(AlarmCalback alarmCallback)
+        public ServiceProxy(ActiveAlarmsChangedCallback alarmCallback)
         {
             _callback = alarmCallback;
             string address = string.Format("{0}/{1}", Constants.Uri, Constants.EndpointAddres);
@@ -32,11 +32,11 @@ namespace NWKC.Alarm.Client
             _channel.ConnectToAlarmService();
         }
 
-        public void AlarmBecameActive(int alarmId)
+        public void ActiveAlarmsChanged()
         {
             if (_callback != null)
             {
-                _callback(alarmId);
+                _callback();
             }
         }
 

@@ -44,13 +44,11 @@ namespace NWKC.Alarm.Client
             Close();
         }
 
-        void AlarmCallback(int alarmId)
+        void AlarmCallback()
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                Console.Write("--> {0}", alarmId);
-                var desc = _proxy.GetAlarmDescription(alarmId);
-                Console.WriteLine(desc.Message);
+                Console.Write("Active alarms changed");
             }));
         }
 

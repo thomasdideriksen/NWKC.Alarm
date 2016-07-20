@@ -52,7 +52,7 @@ namespace NWKC.Alarm.Common
     public interface IAlarmCallbacks
     {
         [OperationContract(IsOneWay = true)]
-        void AlarmBecameActive(int alarmId);
+        void ActiveAlarmsChanged();
     }
 
     public class Constants
