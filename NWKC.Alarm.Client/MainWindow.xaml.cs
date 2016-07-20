@@ -26,11 +26,23 @@ namespace NWKC.Alarm.Client
     {
         NotifyIcon _icon;
         ConfigurationWindow _configWindow;
+        AlarmWindow _alarmWindow;
 
         public MainWindow()
         {
             InitializeComponent();
-            
+
+            //_menu = new System.Windows.Controls.ContextMenu();
+            //_menu.StaysOpen = false;
+            //_menu.Focusable = false;
+            //_menu.Items.Add(new System.Windows.Controls.MenuItem() { Header = "Thomas" });
+            //_menu.Items.Add(new System.Windows.Controls.MenuItem() { Header = "Dideriksen" });
+            //_menu.Opened += (s, e) =>
+            //{
+            //    DispatcherTimer 
+            //    _menu.CaptureMouse();
+            //};
+
             this.WindowState = WindowState.Minimized;
             this.Hide();
 
@@ -41,25 +53,61 @@ namespace NWKC.Alarm.Client
             _icon.Icon = new System.Drawing.Icon(iconStream);
             _icon.Visible = true;
             _icon.Click += _icon_Click;
-        }
 
+
+
+
+
+            _icon.ContextMenu = new System.Windows.Forms.ContextMenu(new System.Windows.Forms.MenuItem[]
+            {
+                new System.Windows.Forms.MenuItem("Configure...", (o, e) => {
+                    if (_configWindow == null)
+                    {
+                        _configWindow = new ConfigurationWindow();
+                        _configWindow.Closing += ClosingWindow;
+                    }
+                    _configWindow.Show();
+                }),
+                new System.Windows.Forms.MenuItem("Show", (o, e) => {
+                    if (_alarmWindow == null)
+                    {
+                        _alarmWindow = new AlarmWindow();
+                    }
+                    _alarmWindow.OpenWindow();
+                }),
+                  new System.Windows.Forms.MenuItem("Hide", (o, e) => {
+                    if (_alarmWindow != null)
+                    {
+                        _alarmWindow.CloseWindow();
+                    }
+                }),
+            });
+        }
+    
         private void _icon_Click(object sender, EventArgs e)
         {
             System.Windows.Forms.MouseEventArgs args = e as System.Windows.Forms.MouseEventArgs;
             if (args != null)
             {
+                // _menu.IsOpen = true;
+                //bool capture = _menu.CaptureMouse();
+                
+                
+                /*
                 if (_configWindow == null)
                 {
                     _configWindow = new ConfigurationWindow();
                     _configWindow.Closing += _configWindow_Closing;
                 }
                 _configWindow.Show();
+                */
             }
         }
 
-        private void _configWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void ClosingWindow(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            _configWindow.Hide();
+            Window window = sender as Window;
+            window.Hide();
             e.Cancel = true;
         }
     }
