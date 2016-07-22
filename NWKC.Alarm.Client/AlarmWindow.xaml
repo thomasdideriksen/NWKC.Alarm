@@ -11,28 +11,34 @@
         x:Name="_window"
         WindowStyle="None"
         Title="AlarmWindow" Height="300" Width="500">
-    <Grid Margin="32">
+
+    <Window.Resources>
+        <local:AlarmManagerModel x:Key="_model"/>
+    </Window.Resources>
+
+    <Grid Margin="32" DataContext="{StaticResource _model}">
         
         <Border CornerRadius="4" Background="White" Padding="16" BorderBrush="#a0a0a0" BorderThickness="1" x:Name="_border">
 
             <Border.Resources>
-                <QuadraticEase EasingMode="EaseOut" x:Key="Easing"/>
+                <QuadraticEase EasingMode="EaseOut" x:Key="EaseOut"/>
+                <QuadraticEase EasingMode="EaseIn" x:Key="EaseIn"/>
             </Border.Resources>
 
             <Border.Triggers>
                 <EventTrigger RoutedEvent="local:AlarmWindow.WindowOpened">
                     <BeginStoryboard>
                         <Storyboard>
-                            <DoubleAnimation Duration="00:00:0.5" EasingFunction="{StaticResource Easing}" Storyboard.TargetProperty="Opacity" From="0" To="1"/>
-                            <DoubleAnimation  Duration="00:00:0.5" EasingFunction="{StaticResource Easing}" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="32" To="0"/>
+                            <DoubleAnimation Duration="00:00:0.5" EasingFunction="{StaticResource EaseOut}" Storyboard.TargetProperty="Opacity" From="0" To="1"/>
+                            <DoubleAnimation  Duration="00:00:0.5" EasingFunction="{StaticResource EaseOut}" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="32" To="0"/>
                         </Storyboard>
                     </BeginStoryboard>
                 </EventTrigger>
                 <EventTrigger RoutedEvent="local:AlarmWindow.WindowClosed">
                     <BeginStoryboard>
                         <Storyboard x:Name="_storyboardClose">
-                            <DoubleAnimation Duration="00:00:0.25" EasingFunction="{StaticResource Easing}" Storyboard.TargetProperty="Opacity" From="1" To="0"/>
-                            <DoubleAnimation  Duration="00:00:0.25" EasingFunction="{StaticResource Easing}" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="0" To="32"/>
+                            <DoubleAnimation Duration="00:00:0.25" EasingFunction="{StaticResource EaseOut}" Storyboard.TargetProperty="Opacity" From="1" To="0"/>
+                            <DoubleAnimation  Duration="00:00:0.25" EasingFunction="{StaticResource EaseOut}" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="0" To="32"/>
                         </Storyboard>
                     </BeginStoryboard>
                 </EventTrigger>
@@ -53,7 +59,26 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform" Grid.Column="0" Width="100">
+                <Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform" Grid.Column="0" Width="100" x:Name="_viewBox">
+                    
+                    <Viewbox.Triggers>
+                        <EventTrigger RoutedEvent="Viewbox.Loaded">
+                            <BeginStoryboard>
+                                <Storyboard RepeatBehavior="Forever">
+                                    <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)">
+                                        <EasingDoubleKeyFrame KeyTime="00:00:00.0" Value="0"/>
+                                        <EasingDoubleKeyFrame KeyTime="00:00:00.5" Value="-32" EasingFunction="{StaticResource EaseOut}"/>
+                                        <EasingDoubleKeyFrame KeyTime="00:00:01.0" Value="0" EasingFunction="{StaticResource EaseIn}"/>
+                                    </DoubleAnimationUsingKeyFrames>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Viewbox.Triggers>
+
+                    <Viewbox.RenderTransform>
+                        <TranslateTransform/>
+                    </Viewbox.RenderTransform>
+                    
                     <Canvas Name="svg4155" Width="50.030793" Height="46.680486">
                         <Canvas.RenderTransform>
                             <TranslateTransform X="0" Y="0"/>
@@ -77,7 +102,7 @@
                     </Canvas>
                 </Viewbox>
 
-                <TextBlock Grid.Column="2">This is a test</TextBlock>
+                <TextBlock Grid.Column="2" Text="{Binding ActiveAlarms.Count}"/>
 
 
             </Grid>
