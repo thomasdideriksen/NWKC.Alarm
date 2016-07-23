@@ -89,18 +89,6 @@ namespace NWKC.Alarm.Client
             System.Windows.Forms.MouseEventArgs args = e as System.Windows.Forms.MouseEventArgs;
             if (args != null)
             {
-                // _menu.IsOpen = true;
-                //bool capture = _menu.CaptureMouse();
-                
-                
-                /*
-                if (_configWindow == null)
-                {
-                    _configWindow = new ConfigurationWindow();
-                    _configWindow.Closing += _configWindow_Closing;
-                }
-                _configWindow.Show();
-                */
             }
         }
 

@@ -9,6 +9,7 @@ using NWKC.Alarm.Common;
 namespace NWKC.Alarm.Client
 {
     public delegate void ActiveAlarmsChangedCallback();
+    public delegate void DisconnectedCallback();
     
     [CallbackBehavior(
         ConcurrencyMode = ConcurrencyMode.Single, 
@@ -17,27 +18,43 @@ namespace NWKC.Alarm.Client
     class ServiceProxy : IAlarmCallbacks
     {
         IAlarmControls _channel;
-        ActiveAlarmsChangedCallback _callback;
+        ActiveAlarmsChangedCallback _activeAlarmsChanged;
+        DisconnectedCallback _disconected;
+        DuplexChannelFactory<IAlarmControls> _factory;
 
-        public ServiceProxy(ActiveAlarmsChangedCallback alarmCallback)
+        public ServiceProxy(ActiveAlarmsChangedCallback activeAlarmsChanged, DisconnectedCallback disconnected)
         {
-            _callback = alarmCallback;
+            _activeAlarmsChanged = activeAlarmsChanged;
+            _disconected = disconnected;
+
             string address = string.Format("{0}/{1}", Constants.Uri, Constants.EndpointAddres);
 
-            DuplexChannelFactory<IAlarmControls> factory = new DuplexChannelFactory<IAlarmControls>(
+            _factory = new DuplexChannelFactory<IAlarmControls>(
                 new InstanceContext(this),
                 new NetNamedPipeBinding(NetNamedPipeSecurityMode.None),
                 new EndpointAddress(address));
+        }
 
-            _channel = factory.CreateChannel();
-            _channel.ConnectToAlarmService();
+        public bool Connect()
+        {
+            try
+            {
+                _channel = _factory.CreateChannel();
+                _channel.ConnectToAlarmService();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                SafeTerminateChannel();
+                return false;
+            }
         }
 
         public void ActiveAlarmsChanged()
         {
-            if (_callback != null)
+            if (_activeAlarmsChanged != null)
             {
-                _callback();
+                _activeAlarmsChanged();
             }
         }
 
@@ -49,8 +66,28 @@ namespace NWKC.Alarm.Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                SafeTerminateChannel();
+
+                if (_disconected != null)
+                {
+                    _disconected();
+                }
             }
+        }
+
+        void SafeTerminateChannel()
+        {
+            try
+            {
+                var comm = _channel as ICommunicationObject;
+                if (comm != null)
+                {
+                    comm.Close();
+                }
+                _channel = null;
+            }
+            catch (Exception ex)
+            { }
         }
         
         public int CreateAlarm(AlarmDescription alarmDescription)

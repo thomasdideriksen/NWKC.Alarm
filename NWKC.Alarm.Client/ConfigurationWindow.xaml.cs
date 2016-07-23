@@ -26,7 +26,8 @@ namespace NWKC.Alarm.Client
         public ConfigurationWindow()
         {
             InitializeComponent();
-            _proxy = new ServiceProxy(AlarmCallback);
+            _proxy = new ServiceProxy(AlarmCallback, DisconnectCallback);
+            _proxy.Connect();
             this.Loaded += ConfigurationWindow_Loaded;
         }
         
@@ -42,6 +43,11 @@ namespace NWKC.Alarm.Client
         {
             base.OnDeactivated(e);
             Close();
+        }
+
+        void DisconnectCallback()
+        {
+
         }
 
         void AlarmCallback()

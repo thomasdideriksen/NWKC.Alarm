@@ -208,11 +208,9 @@ namespace NWKC.Alarm.Service
             if (_activeAlarms.Contains(alarmId))
             {
                 _activeAlarms.Remove(alarmId);
-
+                
                 OnActiveAlarmsChanged();
             }
-
-            // TODO: Maybe clean up OneTime alarms here to avoid unbounded growth of settings.xml
 
             StopSoundIfNoActiveAlarms();
         }

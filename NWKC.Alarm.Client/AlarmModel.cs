@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Threading;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using System.Threading;
 
 namespace NWKC.Alarm.Client
 {
@@ -16,7 +17,7 @@ namespace NWKC.Alarm.Client
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        void NotifyPropertyChanged(string propertyName)
+        protected void NotifyPropertyChanged(string propertyName)
         {
             if (PropertyChanged != null)
             {
@@ -100,14 +101,63 @@ namespace NWKC.Alarm.Client
         ServiceProxy _proxy;
         Dispatcher _dispatcher;
         ObservableCollection<AlarmModel> _activeAlarms;
+        bool _connnected;
+        volatile bool _connecting;
 
         public AlarmManagerModel()
         {
-            _proxy = new ServiceProxy(ActiveAlarmsChangedCallback);
+            _proxy = new ServiceProxy(ActiveAlarmsChangedCallback, DisconnectedCallback);
             _dispatcher = Dispatcher.CurrentDispatcher;
             _activeAlarms = new ObservableCollection<AlarmModel>();
+            _connnected = false;
+            _connecting = false;
 
-            RefreshActiveAlarms();
+            Connect();
+        }
+
+        public bool Connected
+        {
+            get { return _connnected; }
+            set
+            {
+                if (_connnected != value)
+                {
+                    _connnected = value;
+                    NotifyPropertyChanged("Connected");
+                }
+            }
+        }
+
+        void Connect()
+        {
+            if (_connecting)
+            {
+                return;
+            }
+
+            _connecting = true;
+
+            ThreadPool.QueueUserWorkItem((o) =>
+            {
+                while (!_proxy.Connect())
+                {
+                    Thread.Sleep(500);
+                }
+
+                _dispatcher.BeginInvoke(new Action(() =>
+                {
+                    _connecting = false;
+                    Connected = true;
+
+                    RefreshActiveAlarms();
+                }));
+            });
+        }
+
+        void DisconnectedCallback()
+        {
+            Connected = false;
+            Connect();
         }
 
         void ActiveAlarmsChangedCallback()
