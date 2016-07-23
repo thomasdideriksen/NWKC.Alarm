@@ -48,7 +48,7 @@ namespace NWKC.Alarm.Client
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                Console.Write("Active alarms changed");
+                Console.WriteLine("Active alarms changed");
             }));
         }
 

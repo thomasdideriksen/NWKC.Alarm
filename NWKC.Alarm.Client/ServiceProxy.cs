@@ -11,7 +11,8 @@ namespace NWKC.Alarm.Client
     public delegate void ActiveAlarmsChangedCallback();
     
     [CallbackBehavior(
-        ConcurrencyMode = ConcurrencyMode.Multiple, 
+        ConcurrencyMode = ConcurrencyMode.Single, 
+        UseSynchronizationContext = false,
         IncludeExceptionDetailInFaults = true)]
     class ServiceProxy : IAlarmCallbacks
     {

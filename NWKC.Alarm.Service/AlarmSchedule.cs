@@ -16,7 +16,7 @@ namespace NWKC.Alarm.Service
     [ServiceBehavior(
         InstanceContextMode = InstanceContextMode.Single, 
         IncludeExceptionDetailInFaults = true, 
-        ConcurrencyMode = ConcurrencyMode.Multiple)]
+        ConcurrencyMode = ConcurrencyMode.Single)]
     class AlarmSchedule : IAlarmControls
     {
         Dictionary<int, AlarmDescription> _alarms;
@@ -24,14 +24,12 @@ namespace NWKC.Alarm.Service
         DateTime _lastTickTime;
         SoundPlayer _soundPlayer;
         List<IAlarmCallbacks> _clients;
-        object _lockApi;
         object _lockLoadSave;
         bool _soundIsPlaying;
         static int _nextId = 1;
 
         public AlarmSchedule()
         {
-            _lockApi = new object();
             _lockLoadSave = new object();
             _alarms = new Dictionary<int, AlarmDescription>();
             _activeAlarms = new HashSet<int>();
@@ -165,158 +163,131 @@ namespace NWKC.Alarm.Service
 
         public void ConnectToAlarmService()
         {
-            lock (_lockApi)
+            var client = OperationContext.Current.GetCallbackChannel<IAlarmCallbacks>();
+            if (client != null && !_clients.Contains(client))
             {
-                var client = OperationContext.Current.GetCallbackChannel<IAlarmCallbacks>();
-                if (client != null && !_clients.Contains(client))
-                {
-                    _clients.Add(client);
-                }
+                _clients.Add(client);
             }
         }
 
         public int CreateAlarm(AlarmDescription alarmDescription)
         {
-            lock (_lockApi)
-            {
-                int id = CreateAlarmInternal(alarmDescription);
-                SaveAlarms();
-                return id;
-            }
+            int id = CreateAlarmInternal(alarmDescription);
+            SaveAlarms();
+            return id;
         }
 
         public void DeleteAlarm(int alarmId)
         {
-            lock (_lockApi)
+            if (_alarms.ContainsKey(alarmId))
             {
-                if (_alarms.ContainsKey(alarmId))
-                {
-                    _alarms.Remove(alarmId);
-                }
+                _alarms.Remove(alarmId);
             }
         }
         
         public void SnoozeActiveAlarm(int alarmId, TimeSpan snoozeTime)
         {        
-            lock (_lockApi)
+            if (_activeAlarms.Contains(alarmId))
             {
-                if (_activeAlarms.Contains(alarmId))
-                {
-                    _activeAlarms.Remove(alarmId);
+                _activeAlarms.Remove(alarmId);
 
-                    var alarm = _alarms[alarmId];
-                    var toNow = DateTime.Now.Subtract(alarm.Time);
-                    alarm.SnoozeDeltaSeconds = toNow.Add(snoozeTime).TotalSeconds;
+                var alarm = _alarms[alarmId];
+                var toNow = DateTime.Now.Subtract(alarm.Time);
+                alarm.SnoozeDeltaSeconds = toNow.Add(snoozeTime).TotalSeconds;
 
-                    OnActiveAlarmsChanged();
+                OnActiveAlarmsChanged();
 
-                    SaveAlarms();
-                }
-                
-                StopSoundIfNoActiveAlarms();
+                SaveAlarms();
             }
+                
+            StopSoundIfNoActiveAlarms();
         }
 
         public void DismissActiveAlarm(int alarmId)
         {
-            lock (_lockApi)
+            if (_activeAlarms.Contains(alarmId))
             {
-                if (_activeAlarms.Contains(alarmId))
-                {
-                    _activeAlarms.Remove(alarmId);
+                _activeAlarms.Remove(alarmId);
 
-                    OnActiveAlarmsChanged();
-                }
-
-                // TODO: Maybe clean up OneTime alarms here to avoid unbounded growth of settings.xml
-
-                StopSoundIfNoActiveAlarms();
+                OnActiveAlarmsChanged();
             }
+
+            // TODO: Maybe clean up OneTime alarms here to avoid unbounded growth of settings.xml
+
+            StopSoundIfNoActiveAlarms();
         }
         
         public int[] EnumerateActiveAlarms()
         {
-            lock (_lockApi)
-            {
-                return _activeAlarms.ToArray();
-            }
+            return _activeAlarms.ToArray();
         }
 
         public int[] EnumerateAlarms()
         {
-            lock (_lockApi)
-            {
-                return _alarms.Keys.ToArray();
-            }
+            return _alarms.Keys.ToArray();
         }
 
         public AlarmDescription GetAlarmDescription(int id)
         {
-            lock (_lockApi)
+            if (_alarms.ContainsKey(id))
             {
-                if (_alarms.ContainsKey(id))
-                {
-                    return _alarms[id];
-                }
-                else
-                {
-                    return null;
-                }
+                return _alarms[id];
+            }
+            else
+            {
+                return null;
             }
         }
 
         public void Tick()
         {
-            lock (_lockApi)
+            var tickTime = DateTime.Now;
+            List<int> alarmsToActivate = new List<int>();
+
+            foreach (var key in _alarms.Keys)
             {
-                var tickTime = DateTime.Now;
-                List<int> alarmsToActivate = new List<int>();
+                var desc = _alarms[key];
+                var alarmTime = desc.Time.Add(TimeSpan.FromSeconds(desc.SnoozeDeltaSeconds));
 
-                foreach (var key in _alarms.Keys)
+                //
+                // Alarm should fire when:
+                //     
+                // ----------|----------|----------|----------> time
+                //           ^          ^          ^
+                //       last-tick    alarm      tick
+                //
+
+                switch (desc.Type)
                 {
-                    var desc = _alarms[key];
-                    var alarmTime = desc.Time.Add(TimeSpan.FromSeconds(desc.SnoozeDeltaSeconds));
+                    case AlarmType.OneTime:
+                        if (alarmTime > _lastTickTime &&
+                            alarmTime <= tickTime)
+                        {
+                            alarmsToActivate.Add(key);
+                        }
+                        break;
 
-                    //
-                    // Alarm should fire when:
-                    //     
-                    // ----------|----------|----------|----------> time
-                    //           ^          ^          ^
-                    //       last-tick    alarm      tick
-                    //
+                    case AlarmType.RecurringWeekly:
+                        const double secondsPerWeek = 7 * 24 * 60 * 60;
 
-                    switch (desc.Type)
-                    {
-                        case AlarmType.OneTime:
-                            if (alarmTime > _lastTickTime &&
-                                alarmTime <= tickTime)
-                            {
-                                alarmsToActivate.Add(key);
-                            }
-                            break;
+                        double alarmSeconds = alarmTime.ToUnixTimeInSeconds() % secondsPerWeek;
+                        double tickSeconds = tickTime.ToUnixTimeInSeconds() % secondsPerWeek;
+                        double lastTickSeconds = _lastTickTime.ToUnixTimeInSeconds() % secondsPerWeek;
 
-                        case AlarmType.RecurringWeekly:
-                            const double secondsPerWeek = 7 * 24 * 60 * 60;
-
-                            double alarmSeconds = alarmTime.ToUnixTimeInSeconds() % secondsPerWeek;
-                            double tickSeconds = tickTime.ToUnixTimeInSeconds() % secondsPerWeek;
-                            double lastTickSeconds = _lastTickTime.ToUnixTimeInSeconds() % secondsPerWeek;
-
-                            if (alarmSeconds > lastTickSeconds &&
-                                alarmSeconds <= tickSeconds)
-                            {
-                                alarmsToActivate.Add(key);
-                            }
-                            break;
-                    }
+                        if (alarmSeconds > lastTickSeconds &&
+                            alarmSeconds <= tickSeconds)
+                        {
+                            alarmsToActivate.Add(key);
+                        }
+                        break;
                 }
+            }
 
-                _lastTickTime = tickTime;
+            _lastTickTime = tickTime;
 
-                foreach (var alarmId in alarmsToActivate)
-                {
-                    ActivateAlarm(alarmId);
-                }
+            foreach (var alarmId in alarmsToActivate)
+            {
+                ActivateAlarm(alarmId);
             }
         }
     }
