@@ -90,7 +90,7 @@ namespace NWKC.Alarm.Client
             {
                 return new Command(() =>
                 {
-                    _proxy.SnoozeActiveAlarm(_alarmId, TimeSpan.FromMinutes(5.0)); // Note: Snooze time is hardcoded to 5 minutes (TODO: Move this to configuration file, maybe)
+                    _proxy.SnoozeActiveAlarm(_alarmId, TimeSpan.FromSeconds(5.0)); // Note: Snooze time is hardcoded to 5 minutes (TODO: Move this to configuration file, maybe)
                 });
             }
         }

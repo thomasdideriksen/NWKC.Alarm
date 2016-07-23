@@ -63,10 +63,12 @@ namespace NWKC.Alarm.Client
             DateTime time = DateTime.Now;
             time = time.Add(TimeSpan.FromSeconds(4));
 
+            
+
             AlarmDescription desc = new AlarmDescription();
             desc.Type = AlarmType.RecurringWeekly;
             desc.Time = time;
-            desc.Message = "This is a test!";
+            desc.Message = "Alarm/" + DateTime.Now.ToString();
 
             int id = _proxy.CreateAlarm(desc);
             Console.WriteLine("Created alarm: {0}", id);
