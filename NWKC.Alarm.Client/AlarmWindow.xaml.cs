@@ -35,13 +35,15 @@ namespace NWKC.Alarm.Client
             remove { RemoveHandler(WindowClosedEvent, value); }
         }
         
-        public void OpenWindow()
+        void OpenWindow()
         {
+            ConfigureWindow();
+
             _border.RaiseEvent(new RoutedEventArgs(AlarmWindow.WindowOpenedEvent));
             _window.Show();
         }
 
-        public void CloseWindow()
+        void CloseWindow()
         {
             _border.RaiseEvent(new RoutedEventArgs(AlarmWindow.WindowClosedEvent));
         }
@@ -54,9 +56,23 @@ namespace NWKC.Alarm.Client
         public AlarmWindow()
         {
             InitializeComponent();
-            ConfigureWindow();
 
             _storyboardClose.Completed += _storyboardClose_Completed;
+
+            AlarmManagerModel model = Resources["_model"] as AlarmManagerModel;
+            model.ActiveAlarmsChanged += (added, removed, oldCount) =>
+            {
+                if (oldCount == 0 && added.Length > 0)
+                {
+                    // Transition empty -> non-empty
+                    this.OpenWindow();
+                }
+                else if (oldCount == removed.Length && removed.Length > 0)
+                {
+                    // Transtion non-empty -> empty
+                    this.CloseWindow();
+                }
+            };
         }
 
         void ConfigureWindow()

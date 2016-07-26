@@ -49,6 +49,8 @@ namespace NWKC.Alarm.Client
             var assembly = Assembly.GetExecutingAssembly();
             var iconStream = Helpers.GetEmbeddedResource("icon.ico", assembly);
 
+            _alarmWindow = new AlarmWindow();
+
             _icon = new NotifyIcon();
             _icon.Icon = new System.Drawing.Icon(iconStream);
             _icon.Visible = true;
@@ -67,19 +69,6 @@ namespace NWKC.Alarm.Client
                         _configWindow.Closing += ClosingWindow;
                     }
                     _configWindow.Show();
-                }),
-                new System.Windows.Forms.MenuItem("Show", (o, e) => {
-                    if (_alarmWindow == null)
-                    {
-                        _alarmWindow = new AlarmWindow();
-                    }
-                    _alarmWindow.OpenWindow();
-                }),
-                  new System.Windows.Forms.MenuItem("Hide", (o, e) => {
-                    if (_alarmWindow != null)
-                    {
-                        _alarmWindow.CloseWindow();
-                    }
                 }),
             });
         }

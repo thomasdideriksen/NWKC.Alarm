@@ -72,6 +72,10 @@ namespace NWKC.Alarm.Client
         {
             get { return _description.Time; }
         }
+        public int Id
+        {
+            get { return _alarmId; }
+        }
 
         public Command Dismiss
         {
@@ -96,6 +100,8 @@ namespace NWKC.Alarm.Client
         }
     }
 
+    delegate void ActiveAlarmsChangedDelegate(int[] added, int[] removed, int oldCount);
+
     class AlarmManagerModel : ModelBase
     {
         ServiceProxy _proxy;
@@ -103,6 +109,8 @@ namespace NWKC.Alarm.Client
         ObservableCollection<AlarmModel> _activeAlarms;
         bool _connnected;
         volatile bool _connecting;
+
+        public event ActiveAlarmsChangedDelegate ActiveAlarmsChanged;
 
         public AlarmManagerModel()
         {
@@ -170,13 +178,31 @@ namespace NWKC.Alarm.Client
 
         void RefreshActiveAlarms()
         {
+            HashSet<int> oldSet = new HashSet<int>();
+            foreach (var activeAlarm in _activeAlarms)
+            {
+                oldSet.Add(activeAlarm.Id);
+            }
+
+            int oldCount = _activeAlarms.Count;
+
             var ids = _proxy.EnumerateActiveAlarms();
+
+            HashSet<int> newSet = new HashSet<int>(ids);
 
             _activeAlarms.Clear();
             foreach (var id in ids)
             {
                 var description = _proxy.GetAlarmDescription(id);
                 _activeAlarms.Add(new AlarmModel(_proxy, id, description));
+            }
+
+            if (ActiveAlarmsChanged != null)
+            {
+                var added = newSet.Except(oldSet).ToArray();
+                var removed = oldSet.Except(newSet).ToArray();
+
+                ActiveAlarmsChanged(added, removed, oldCount);
             }
         }
 
