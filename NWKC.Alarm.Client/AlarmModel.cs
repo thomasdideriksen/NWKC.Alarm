@@ -178,31 +178,49 @@ namespace NWKC.Alarm.Client
 
         void RefreshActiveAlarms()
         {
+            // Create exisiting (old) set of IDs
             HashSet<int> oldSet = new HashSet<int>();
             foreach (var activeAlarm in _activeAlarms)
             {
                 oldSet.Add(activeAlarm.Id);
             }
 
+            // Keep track of the existing (old) count
             int oldCount = _activeAlarms.Count;
 
+            // Create new set of IDs
             var ids = _proxy.EnumerateActiveAlarms();
-
             HashSet<int> newSet = new HashSet<int>(ids);
 
-            _activeAlarms.Clear();
-            foreach (var id in ids)
+            // Figure out which IDs to add and which to remove
+            var toAdd = newSet.Except(oldSet).ToArray();
+            var toRemove = oldSet.Except(newSet).ToArray();
+
+            // Create ID to model mapping
+            Dictionary<int, AlarmModel> _modelById = new Dictionary<int, AlarmModel>();
+            foreach (var model in _activeAlarms)
+            {
+                _modelById.Add(model.Id, model);
+            }
+
+            // Remove IDs
+            foreach (var id in toRemove)
+            {
+                var model = _modelById[id];
+                _activeAlarms.Remove(model);
+            }
+        
+            // Add IDs
+            foreach (var id in toAdd)
             {
                 var description = _proxy.GetAlarmDescription(id);
                 _activeAlarms.Add(new AlarmModel(_proxy, id, description));
             }
 
+            // Fire event
             if (ActiveAlarmsChanged != null)
             {
-                var added = newSet.Except(oldSet).ToArray();
-                var removed = oldSet.Except(newSet).ToArray();
-
-                ActiveAlarmsChanged(added, removed, oldCount);
+                ActiveAlarmsChanged(toAdd, toRemove, oldCount);
             }
         }
 
